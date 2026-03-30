@@ -57,8 +57,7 @@ val decode(std::string heicimage) {
     // Need to remove stride padding
     val pixel_data = Uint8ClampedArray.new_(total_bytes);
     for (int y = 0; y < height; y++) {
-      val row = typed_memory_view(row_bytes, data + y * stride);
-      pixel_data.call<void>("set", row, y * row_bytes);
+      pixel_data.call<void>("set", val(typed_memory_view(row_bytes, data + y * stride)), y * row_bytes);
     }
     result = ImageData.new_(pixel_data, width, height);
   }

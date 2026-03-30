@@ -3,7 +3,7 @@
 LIBHEIF_URL = https://github.com/strukturag/libheif/archive/refs/tags/v1.19.7.tar.gz
 LIBHEIF_PACKAGE = node_modules/libheif.tar.gz
 
-LIBDE265_URL = https://github.com/nicbarker/libde265/archive/refs/tags/v1.0.15.1.tar.gz
+LIBDE265_URL = https://github.com/strukturag/libde265/archive/refs/tags/v1.0.15.tar.gz
 LIBDE265_PACKAGE = node_modules/libde265.tar.gz
 
 export CODEC_DIR = node_modules/libheif
@@ -60,7 +60,8 @@ $(LIBDE265_OUT): $(LIBDE265_DIR)/CMakeLists.txt
 		-DENABLE_DECODER=ON \
 		-B $(LIBDE265_BUILD_DIR) \
 		$(LIBDE265_DIR) && \
-	$(MAKE) -C $(LIBDE265_BUILD_DIR)
+	$(MAKE) -C $(LIBDE265_BUILD_DIR) && \
+	cp $(LIBDE265_BUILD_DIR)/libde265/de265-version.h $(LIBDE265_DIR)/libde265/
 
 # Build libheif (decode-only, with libde265)
 $(LIBHEIF_OUT): $(CODEC_DIR)/CMakeLists.txt $(LIBDE265_OUT)
@@ -86,6 +87,7 @@ $(LIBHEIF_OUT): $(CODEC_DIR)/CMakeLists.txt $(LIBDE265_OUT)
 		-DWITH_FFMPEG_DECODER=OFF \
 		-DWITH_UNCOMPRESSED_CODEC=OFF \
 		-DWITH_DEFLATE_HEADER_COMPRESSION=OFF \
+		-DBUILD_TESTING=OFF \
 		-DWITH_LIBDE265=ON \
 		-DLIBDE265_INCLUDE_DIR=$(LIBDE265_DIR) \
 		-DLIBDE265_LIBRARY=$(LIBDE265_OUT) \
