@@ -39,8 +39,21 @@ fn make_image_data(rgba: Vec<u8>, width: u32, height: u32) -> ImageData {
     ImageData::new_with_owned_u8_clamped_array_and_sh(Clamped(rgba), width, height)
 }
 
+fn validate_gif(data: &[u8]) {
+    if data.len() < 6 {
+        wasm_bindgen::throw_str("Not a valid GIF file (too short)");
+    }
+    let sig = &data[..6];
+    if sig != b"GIF87a" && sig != b"GIF89a" {
+        wasm_bindgen::throw_str(
+            "Not a valid GIF file (expected GIF87a/GIF89a header)",
+        );
+    }
+}
+
 #[wasm_bindgen]
 pub fn decode(data: &[u8]) -> ImageData {
+    validate_gif(data);
     let mut opts = DecodeOptions::new();
     opts.set_color_output(gif::ColorOutput::RGBA);
     let mut decoder = opts.read_info(data).unwrap_throw();
@@ -82,6 +95,7 @@ pub fn decode(data: &[u8]) -> ImageData {
 
 #[wasm_bindgen(js_name = "decodeAnimated")]
 pub fn decode_animated(data: &[u8]) -> Vec<GIFFrame> {
+    validate_gif(data);
     let mut opts = DecodeOptions::new();
     opts.set_color_output(gif::ColorOutput::RGBA);
     let mut decoder = opts.read_info(data).unwrap_throw();
@@ -167,6 +181,7 @@ pub fn decode_animated(data: &[u8]) -> Vec<GIFFrame> {
 
 #[wasm_bindgen(js_name = "isAnimated")]
 pub fn is_animated(data: &[u8]) -> bool {
+    validate_gif(data);
     let mut opts = DecodeOptions::new();
     opts.set_color_output(gif::ColorOutput::RGBA);
     let mut decoder = match opts.read_info(data) {
