@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>jSquash GIF Decoder Example</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      display: block;
+      margin: 1rem 0;
+      image-rendering: pixelated;
+    }
+    #status {
+      color: #666;
+      margin: 0.5rem 0;
+    }
+    #controls {
+      margin: 1rem 0;
+    }
+    #controls button {
+      margin-right: 0.5rem;
+    }
+    #frame-info {
+      font-size: 0.9rem;
+      color: #444;
+    }
+    .section {
+      margin: 1.5rem 0;
+      padding: 1rem;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>@jsquash/gif Decoder</h1>
+  <form>
+    <label>
+      Choose a GIF file:
+      <input type="file" name="file" accept=".gif,image/gif">
+    </label>
+  </form>
+
+  <div id="status"></div>
+
+  <div class="section" id="single-frame-section" hidden>
+    <h2>Single Frame (decode)</h2>
+    <canvas id="single-canvas"></canvas>
+    <p id="single-info"></p>
+  </div>
+
+  <div class="section" id="animation-section" hidden>
+    <h2>Animation (decodeAnimated)</h2>
+    <canvas id="anim-canvas"></canvas>
+    <div id="controls">
+      <button id="play-btn">Pause</button>
+    </div>
+    <p id="frame-info"></p>
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
