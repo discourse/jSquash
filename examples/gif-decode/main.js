@@ -1,6 +1,6 @@
 import init, { decode, decodeAnimated, isAnimated } from '../../packages/gif/codec/pkg/squoosh_gif.js';
 
-const status = document.getElementById('status');
+const statusEl = document.getElementById('status');
 const singleSection = document.getElementById('single-frame-section');
 const animSection = document.getElementById('animation-section');
 const singleCanvas = document.getElementById('single-canvas');
@@ -8,9 +8,20 @@ const animCanvas = document.getElementById('anim-canvas');
 const singleInfo = document.getElementById('single-info');
 const frameInfo = document.getElementById('frame-info');
 const playBtn = document.getElementById('play-btn');
+const filmstrip = document.getElementById('filmstrip');
+const dropZone = document.getElementById('drop-zone');
+const fileInput = dropZone.querySelector('input[type="file"]');
 
 let animationId = null;
 let playing = false;
+let currentFrameIndex = 0;
+let initialized = false;
+
+function setStatus(msg, isError = false) {
+  statusEl.style.display = 'block';
+  statusEl.textContent = msg;
+  statusEl.classList.toggle('error', isError);
+}
 
 function drawImageData(canvas, imageData) {
   canvas.width = imageData.width;
@@ -19,16 +30,22 @@ function drawImageData(canvas, imageData) {
   ctx.putImageData(imageData, 0, 0);
 }
 
+function highlightFilmstripFrame(index) {
+  filmstrip.querySelectorAll('.filmstrip-frame').forEach((el, i) => {
+    el.classList.toggle('active', i === index);
+  });
+}
+
 function playAnimation(canvas, frames) {
-  let currentFrame = 0;
   playing = true;
   playBtn.textContent = 'Pause';
 
   function renderFrame() {
-    const frame = frames[currentFrame];
+    const frame = frames[currentFrameIndex];
     drawImageData(canvas, frame.imageData);
-    frameInfo.textContent = `Frame ${currentFrame + 1} / ${frames.length} — ${frame.duration}ms`;
-    currentFrame = (currentFrame + 1) % frames.length;
+    frameInfo.textContent = `Frame ${currentFrameIndex + 1} / ${frames.length} \u2014 ${frame.duration}ms`;
+    highlightFilmstripFrame(currentFrameIndex);
+    currentFrameIndex = (currentFrameIndex + 1) % frames.length;
     animationId = setTimeout(renderFrame, frame.duration);
   }
 
@@ -44,6 +61,48 @@ function stopAnimation() {
   playBtn.textContent = 'Play';
 }
 
+function buildFilmstrip(frames) {
+  filmstrip.innerHTML = '';
+  const thumbHeight = 80;
+
+  frames.forEach((frame, i) => {
+    const aspect = frame.imageData.width / frame.imageData.height;
+    const thumbWidth = Math.round(thumbHeight * aspect);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'filmstrip-frame';
+
+    const canvas = document.createElement('canvas');
+    canvas.width = thumbWidth;
+    canvas.height = thumbHeight;
+    const ctx = canvas.getContext('2d');
+
+    // Draw scaled-down frame
+    const tmp = document.createElement('canvas');
+    tmp.width = frame.imageData.width;
+    tmp.height = frame.imageData.height;
+    tmp.getContext('2d').putImageData(frame.imageData, 0, 0);
+    ctx.drawImage(tmp, 0, 0, thumbWidth, thumbHeight);
+
+    const label = document.createElement('div');
+    label.className = 'frame-label';
+    label.textContent = `#${i + 1} ${frame.duration}ms`;
+
+    wrapper.appendChild(canvas);
+    wrapper.appendChild(label);
+
+    wrapper.addEventListener('click', () => {
+      stopAnimation();
+      currentFrameIndex = i;
+      drawImageData(animCanvas, frame.imageData);
+      frameInfo.textContent = `Frame ${i + 1} / ${frames.length} \u2014 ${frame.duration}ms`;
+      highlightFilmstripFrame(i);
+    });
+
+    filmstrip.appendChild(wrapper);
+  });
+}
+
 playBtn.addEventListener('click', () => {
   if (playing) {
     stopAnimation();
@@ -52,23 +111,22 @@ playBtn.addEventListener('click', () => {
   }
 });
 
-let initialized = false;
-
-document.querySelector('form').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+async function handleFile(file) {
+  if (!file || !file.type.startsWith('image/gif')) return;
 
   stopAnimation();
+  currentFrameIndex = 0;
   singleSection.hidden = true;
   animSection.hidden = true;
-  status.textContent = 'Initializing WASM...';
+  filmstrip.innerHTML = '';
 
   if (!initialized) {
+    setStatus('Initializing WASM...');
     await init();
     initialized = true;
   }
 
-  status.textContent = 'Decoding...';
+  setStatus('Decoding...');
 
   try {
     const buffer = await file.arrayBuffer();
@@ -79,7 +137,7 @@ document.querySelector('form').addEventListener('change', async (e) => {
     const imageData = decode(data);
     const decodeTime = (performance.now() - t0).toFixed(1);
     drawImageData(singleCanvas, imageData);
-    singleInfo.textContent = `${imageData.width}x${imageData.height} — decoded in ${decodeTime}ms`;
+    singleInfo.textContent = `${imageData.width} \u00d7 ${imageData.height} \u2014 decoded in ${decodeTime}ms`;
     singleSection.hidden = false;
 
     // Check if animated
@@ -89,15 +147,32 @@ document.querySelector('form').addEventListener('change', async (e) => {
       const t1 = performance.now();
       const frames = decodeAnimated(data);
       const animTime = (performance.now() - t1).toFixed(1);
-      status.textContent = `Animated GIF: ${frames.length} frames decoded in ${animTime}ms`;
+      setStatus(`Animated GIF: ${frames.length} frames, ${imageData.width}\u00d7${imageData.height} \u2014 decoded in ${animTime}ms`);
       playBtn._frames = frames;
+      buildFilmstrip(frames);
       playAnimation(animCanvas, frames);
       animSection.hidden = false;
     } else {
-      status.textContent = `Static GIF — decoded in ${decodeTime}ms`;
+      setStatus(`Static GIF: ${imageData.width}\u00d7${imageData.height} \u2014 decoded in ${decodeTime}ms`);
     }
   } catch (err) {
-    status.textContent = `Error: ${err.message}`;
+    setStatus(`Error: ${err.message}`, true);
     console.error(err);
   }
+}
+
+// File input
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+// Drag and drop
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  handleFile(e.dataTransfer.files[0]);
 });
