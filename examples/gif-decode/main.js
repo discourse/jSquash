@@ -1,4 +1,4 @@
-import { decode, decodeAnimated, isAnimated } from 'https://unpkg.com/@jsquash/gif@latest?module';
+import init, { decode, decodeAnimated, isAnimated } from '../../packages/gif/codec/pkg/squoosh_gif.js';
 
 const status = document.getElementById('status');
 const singleSection = document.getElementById('single-frame-section');
@@ -52,6 +52,8 @@ playBtn.addEventListener('click', () => {
   }
 });
 
+let initialized = false;
+
 document.querySelector('form').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -59,25 +61,33 @@ document.querySelector('form').addEventListener('change', async (e) => {
   stopAnimation();
   singleSection.hidden = true;
   animSection.hidden = true;
+  status.textContent = 'Initializing WASM...';
+
+  if (!initialized) {
+    await init();
+    initialized = true;
+  }
+
   status.textContent = 'Decoding...';
 
   try {
     const buffer = await file.arrayBuffer();
+    const data = new Uint8Array(buffer);
 
     // Single frame decode
     const t0 = performance.now();
-    const imageData = await decode(buffer);
+    const imageData = decode(data);
     const decodeTime = (performance.now() - t0).toFixed(1);
     drawImageData(singleCanvas, imageData);
     singleInfo.textContent = `${imageData.width}x${imageData.height} — decoded in ${decodeTime}ms`;
     singleSection.hidden = false;
 
     // Check if animated
-    const animated = await isAnimated(buffer);
+    const animated = isAnimated(data);
 
     if (animated) {
       const t1 = performance.now();
-      const frames = await decodeAnimated(buffer);
+      const frames = decodeAnimated(data);
       const animTime = (performance.now() - t1).toFixed(1);
       status.textContent = `Animated GIF: ${frames.length} frames decoded in ${animTime}ms`;
       playBtn._frames = frames;
