@@ -9,7 +9,8 @@
   "scripts": {
     "build": "turbo run build",
     "lint": "prettier -l \"packages/**/*.{js,ts}\" test/**/*.ts && eslint \"packages/**/*.{js,ts}\"",
-    "format": "prettier -lw \"packages/**/*.{js,ts}\" test/**/*.ts"
+    "format": "prettier -lw \"packages/**/*.{js,ts}\" test/**/*.ts",
+    "prepare:discourse-publish": "node tools/prepare-discourse-publish.mjs"
   },
   "license": "Apache-2.0",
   "devDependencies": {

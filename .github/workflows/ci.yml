@@ -7,18 +7,55 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  build:
+  validate:
     runs-on: ubuntu-latest
+    name: Validate
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
+          cache: npm
       - name: Install
-        run: npm install
+        run: npm ci
       - name: Lint
         run: npm run lint
       - name: Build
         run: npm run build
       - name: Integration Tests
-        run: cd test && npm install && npm test
+        run: cd test && npm ci && npm test
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    name: Publish packages
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - name: Install
+        run: npm ci
+      - name: Build packages
+        run: npm run build
+      - name: Prepare @discourse packages
+        run: npm run prepare:discourse-publish
+      - name: Publish unpublished versions
+        run: |
+          for package_dir in packages/*/dist; do
+            package_name=$(node -p "require('./${package_dir}/package.json').name")
+            package_version=$(node -p "require('./${package_dir}/package.json').version")
+
+            if npm view "${package_name}@${package_version}" version >/dev/null 2>&1; then
+              echo "Skipping ${package_name}@${package_version}; already published"
+              continue
+            fi
+
+            npm publish "${package_dir}" --provenance --access public
+          done
