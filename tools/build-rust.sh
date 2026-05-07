@@ -10,4 +10,11 @@ then
 fi
 IMG_NAME=squoosh-rust$IMG_SUFFIX
 docker build -t $IMG_NAME --build-arg RUST_IMG - < "$SCRIPTDIR/rust.Dockerfile"
-docker run -it --rm -v $PWD:/src $IMG_NAME "$@"
+if [ -t 0 ]
+then
+  DOCKER_TTY_FLAGS="-it"
+else
+  DOCKER_TTY_FLAGS="-i"
+fi
+docker run $DOCKER_TTY_FLAGS --rm -v $PWD:/src $IMG_NAME "$@"
+docker run --rm -v $PWD:/src --entrypoint chown $IMG_NAME -R "$(id -u):$(id -g)" /src/pkg /src/target 2>/dev/null || true
