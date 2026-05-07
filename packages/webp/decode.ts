@@ -68,9 +68,7 @@ export async function decodeAnimated(
   return result;
 }
 
-export async function isAnimated(
-  buffer: ArrayBuffer,
-): Promise<boolean> {
+export async function isAnimated(buffer: ArrayBuffer): Promise<boolean> {
   if (!emscriptenModule) init();
 
   const module = await emscriptenModule;

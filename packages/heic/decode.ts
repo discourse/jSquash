@@ -29,9 +29,7 @@ export async function init(
   );
 }
 
-export default async function decode(
-  buffer: ArrayBuffer,
-): Promise<ImageData> {
+export default async function decode(buffer: ArrayBuffer): Promise<ImageData> {
   if (!emscriptenModule) {
     init();
   }

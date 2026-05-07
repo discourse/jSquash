@@ -30,9 +30,7 @@ export async function init(moduleOrPath?: InitInput): Promise<GifModule> {
   return gifModule;
 }
 
-export default async function decode(
-  buffer: ArrayBuffer,
-): Promise<ImageData> {
+export default async function decode(buffer: ArrayBuffer): Promise<ImageData> {
   validateGif(buffer);
   await init();
 
@@ -41,9 +39,7 @@ export default async function decode(
   return result;
 }
 
-export async function decodeAnimated(
-  buffer: ArrayBuffer,
-): Promise<GIFFrame[]> {
+export async function decodeAnimated(buffer: ArrayBuffer): Promise<GIFFrame[]> {
   validateGif(buffer);
   await init();
 
@@ -52,9 +48,7 @@ export async function decodeAnimated(
   return result;
 }
 
-export async function isAnimated(
-  buffer: ArrayBuffer,
-): Promise<boolean> {
+export async function isAnimated(buffer: ArrayBuffer): Promise<boolean> {
   validateGif(buffer);
   await init();
 

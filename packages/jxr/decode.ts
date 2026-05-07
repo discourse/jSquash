@@ -21,16 +21,10 @@ export async function init(
     actualOptions = module as unknown as Partial<EmscriptenWasm.ModuleOpts>;
   }
 
-  emscriptenModule = initEmscriptenModule(
-    jxr_dec,
-    actualModule,
-    actualOptions,
-  );
+  emscriptenModule = initEmscriptenModule(jxr_dec, actualModule, actualOptions);
 }
 
-export default async function decode(
-  buffer: ArrayBuffer,
-): Promise<ImageData> {
+export default async function decode(buffer: ArrayBuffer): Promise<ImageData> {
   if (!emscriptenModule) {
     init();
   }
